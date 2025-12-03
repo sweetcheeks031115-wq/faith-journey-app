@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faith Journey - Bible Learning App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-pink-100 via-rose-100 to-orange-100 min-h-screen">
+    <div id="app" class="max-w-2xl mx-auto pb-20">
+        <div class="bg-white/80 backdrop-blur shadow-xl min-h-screen">
+            <div class="bg-gradient-to-r from-rose-400 via-pink-400 to-orange-400 text-white p-6">
+                <h1 class="text-2xl font-bold">Faith Journey</h1>
+                <p class="text-pink-50 text-sm mt-1">Your daily companion for spiritual growth</p>
+            </div>
+            <div id="content" class="p-6"></div>
+            <div class="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-pink-200 via-rose-200 to-orange-200 border-t border-rose-300 shadow-lg">
+                <div class="max-w-2xl mx-auto px-2 py-3 flex justify-around">
+                    <button onclick="showTab('home')" id="nav-home" class="nav-btn flex flex-col items-center gap-1 px-3 py-2 rounded-lg">
+                        <span class="text-xl">🏠</span>
+                        <span class="text-xs font-medium">Home</span>
+                    </button>
+                    <button onclick="showTab('plans')" id="nav-plans" class="nav-btn flex flex-col items-center gap-1 px-3 py-2 rounded-lg">
+                        <span class="text-xl">📖</span>
+                        <span class="text-xs font-medium">Plans</span>
+                    </button>
+                    <button onclick="showTab('topics')" id="nav-topics" class="nav-btn flex flex-col items-center gap-1 px-3 py-2 rounded-lg">
+                        <span class="text-xl">🔍</span>
+                        <span class="text-xs font-medium">Study</span>
+                    </button>
+                    <button onclick="showTab('journal')" id="nav-journal" class="nav-btn flex flex-col items-center gap-1 px-3 py-2 rounded-lg">
+                        <span class="text-xl">❤️</span>
+                        <span class="text-xs font-medium">Journal</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let journalEntries = JSON.parse(localStorage.getItem('journalEntries')) || [];
+        let planProgress = JSON.parse(localStorage.getItem('planProgress')) || {};
+        let currentPlan = null;
+
+        const dailyPrayer = {
+            title: "Morning Prayer for Guidance",
+            text: "Heavenly Father, as I begin this new day, I come before You with a grateful heart. Thank You for the gift of life and the breath in my lungs. Guide my steps today, Lord. Give me wisdom in my decisions, strength in my challenges, and peace in my heart. Help me to see Your hand in all things and to trust in Your perfect plan for my life. May my words and actions reflect Your love. In Jesus' name, Amen."
+        };
+
+        const dailyVerse = {
+            reference: "Jeremiah 29:11",
+            text: "For I know the plans I have for you, declares the Lord, plans to prosper you and not to harm you, plans to give you hope and a future.",
+            explanation: "This powerful promise reminds us that God has a specific plan for each of our lives. Even when we can't see the path ahead, He is working everything together for our good."
+        };
+
+        const topics = [
+            { name: "Finding Your Purpose", icon: "🎯",
+                verses: [
+                    { ref: "Ephesians 2:10", text: "For we are God's handiwork, created in Christ Jesus to do good works, which God prepared in advance for us to do." },
+                    { ref: "Proverbs 19:21", text: "Many are the plans in a person's heart, but it is the Lord's purpose that prevails." }
+                ]
+            },
+            { name: "God's Promises", icon: "✨",
+                verses: [
+                    { ref: "Isaiah 41:10", text: "So do not fear, for I am with you; do not be dismayed, for I am your God." },
+                    { ref: "Philippians 4:19", text: "And my God will meet all your needs according to the riches of his glory in Christ Jesus." }
+                ]
+            },
+            { name: "Strength & Courage", icon: "💪",
+                verses: [
+                    { ref: "Joshua 1:9", text: "Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go." },
+                    { ref: "Philippians 4:13", text: "I can do all this through him who gives me strength." }
+                ]
+            },
+            { name: "Peace & Hope", icon: "🕊️",
+                verses: [
+                    { ref: "John 14:27", text: "Peace I leave with you; my peace I give you. I do not give to you as the world gives." },
+                    { ref: "Romans 15:13", text: "May the God of hope fill you with all joy and peace as you trust in him." }
+                ]
+            }
+        ];
+
+        const readingPlans = [
+            {
+                id: 'psalms', name: '30-Day Psalms & Proverbs', description: 'Read one Psalm and one Proverbs chapter each day',
+                duration: '30 days', icon: '📜',
+                days: Array.from({ length: 30 }, (_, i) => ({ day: i + 1, reading: `Psalm ${i + 1} & Proverbs ${i + 1}` }))
+            },
+            {
+                id: 'gospels', name: 'Gospels in 40 Days', description: 'Journey through the life of Jesus',
+                duration: '40 days', icon: '✝️',
+                days: [...Array.from({ length: 10 }, (_, i) => ({ day: i + 1, reading: `Matthew ${i + 1}-${i + 3}` })),
+                       ...Array.from({ length: 10 }, (_, i) => ({ day: i + 11, reading: `Mark ${i + 1}-${i + 2}` })),
+                       ...Array.from({ length: 12 }, (_, i) => ({ day: i + 21, reading: `Luke ${i + 1}-${i + 2}` })),
+                       ...Array.from({ length: 8 }, (_, i) => ({ day: i + 33, reading: `John ${i + 1}-${i + 3}` }))]
+            },
+            {
+                id: 'faith', name: 'Faith Foundations', description: 'Essential verses for new believers',
+                duration: '21 days', icon: '🌟',
+                days: [
+                    { day: 1, reading: 'John 3:16-21 (Salvation)' }, { day: 2, reading: 'Romans 3:23-26 (Sin & Grace)' },
+                    { day: 3, reading: 'Ephesians 2:8-10 (Saved by Faith)' }, { day: 4, reading: 'John 14:1-6 (Jesus is the Way)' },
+                    { day: 5, reading: 'Romans 8:1-11 (Life in the Spirit)' }, { day: 6, reading: 'Matthew 6:9-13 (Lord\'s Prayer)' },
+                    { day: 7, reading: 'Psalm 23 (Good Shepherd)' }, { day: 8, reading: '1 Corinthians 13 (Love)' },
+                    { day: 9, reading: 'Matthew 5:1-12 (Beatitudes)' }, { day: 10, reading: 'Romans 12:1-8 (Living Sacrifice)' },
+                    { day: 11, reading: 'Philippians 4:4-13 (Joy & Peace)' }, { day: 12, reading: 'James 1:2-8 (Faith & Trials)' },
+                    { day: 13, reading: 'Hebrews 11:1-6 (Faith Defined)' }, { day: 14, reading: 'Matthew 28:18-20 (Great Commission)' },
+                    { day: 15, reading: 'Galatians 5:22-26 (Fruit of Spirit)' }, { day: 16, reading: 'Psalm 119:9-16 (God\'s Word)' },
+                    { day: 17, reading: '1 John 4:7-21 (God is Love)' }, { day: 18, reading: 'Romans 8:28-39 (Nothing Separates)' },
+                    { day: 19, reading: 'Jeremiah 29:11-13 (God\'s Plans)' }, { day: 20, reading: 'Isaiah 40:28-31 (Strength Renewed)' },
+                    { day: 21, reading: 'Revelation 21:1-7 (New Creation)' }
+                ]
+            }
+        ];
+
+        function getPlanProgress(planId, totalDays) {
+            const completed = Object.keys(planProgress).filter(key => key.startsWith(planId + '-') && planProgress[key]).length;
+            return Math.round((completed / totalDays) * 100);
+        }
+
+        function toggleDay(planId, day) {
+            const key = planId + '-' + day;
+            planProgress[key] = !planProgress[key];
+            localStorage.setItem('planProgress', JSON.stringify(planProgress));
+            showTab('plans');
+        }
+
+        function selectPlan(id) {
+            currentPlan = id;
+            showTab('plans');
+        }
+
+        function addJournalEntry() {
+            const input = document.getElementById('journalInput');
+            if (!input.value.trim()) return;
+            journalEntries.unshift({
+                id: Date.now(),
+                date: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+                content: input.value.trim()
+            });
+            localStorage.setItem('journalEntries', JSON.stringify(journalEntries));
+            showTab('journal');
+        }
+
+        function showTab(tab) {
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-white', 'shadow-md', 'text-rose-700', 'text-emerald-700', 'text-purple-700', 'text-amber-700');
+                btn.classList.add('text-gray-700');
+            });
+            document.getElementById('nav-' + tab).classList.add('bg-white', 'shadow-md');
+            
+            let html = '';
+            if (tab === 'home') {
+                html = `
+                    <div class="space-y-6">
+                        <div class="bg-gradient-to-br from-pink-100 via-rose-100 to-orange-100 rounded-2xl p-6 shadow-md">
+                            <div class="flex items-center gap-2 mb-3"><span class="text-2xl">🙏</span><h2 class="text-xl font-semibold text-gray-800">Morning Prayer</h2></div>
+                            <h3 class="font-medium text-gray-700 mb-3">${dailyPrayer.title}</h3>
+                            <p class="text-gray-600 leading-relaxed italic">${dailyPrayer.text}</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-yellow-100 via-amber-100 to-orange-100 rounded-2xl p-6 shadow-md">
+                            <div class="flex items-center gap-2 mb-3"><span class="text-2xl">📖</span><h2 class="text-xl font-semibold text-gray-800">Today's Verse</h2></div>
+                            <p class="text-sm font-medium text-orange-700 mb-2">${dailyVerse.reference}</p>
+                            <p class="text-gray-700 mb-4 font-medium leading-relaxed">"${dailyVerse.text}"</p>
+                            <div class="bg-white/70 rounded-lg p-4"><p class="text-sm text-gray-600 leading-relaxed">${dailyVerse.explanation}</p></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="showTab('plans')" class="bg-gradient-to-br from-emerald-200 to-teal-200 rounded-xl p-4 shadow-md border border-emerald-300">
+                                <span class="text-3xl mb-2 block">📖</span><p class="font-medium text-gray-800 text-sm">Reading Plans</p>
+                            </button>
+                            <button onclick="showTab('journal')" class="bg-gradient-to-br from-yellow-200 to-amber-200 rounded-xl p-4 shadow-md border border-yellow-300">
+                                <span class="text-3xl mb-2 block">❤️</span><p class="font-medium text-gray-800 text-sm">Gratitude Journal</p>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else if (tab === 'topics') {
+                html = `
+                    <div class="space-y-4">
+                        <div class="bg-gradient-to-r from-purple-200 via-pink-200 to-rose-200 rounded-2xl p-4 shadow-md">
+                            <div class="flex items-center gap-2"><span class="text-2xl">🔍</span><h2 class="text-xl font-semibold text-gray-800">Study by Topic</h2></div>
+                            <p class="text-sm text-gray-700 mt-1">Explore God's word organized by theme</p>
+                        </div>
+                        ${topics.map(t => `
+                            <div class="bg-gradient-to-br from-white to-pink-50 rounded-xl p-5 shadow-md border border-pink-200">
+                                <div class="flex items-center gap-2 mb-4"><span class="text-2xl">${t.icon}</span><h3 class="font-semibold text-gray-800">${t.name}</h3></div>
+                                ${t.verses.map(v => `
+                                    <div class="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg p-3 border border-yellow-200 mb-3">
+                                        <p class="text-xs font-medium text-orange-700 mb-1">${v.ref}</p>
+                                        <p class="text-sm text-gray-700 leading-relaxed">"${v.text}"</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } else if (tab === 'journal') {
+                html = `
+                    <div class="space-y-4">
+                        <div class="bg-gradient-to-r from-yellow-200 via-amber-200 to-orange-200 rounded-2xl p-4 shadow-md">
+                            <div class="flex items-center gap-2"><span class="text-2xl">❤️</span><h2 class="text-xl font-semibold text-gray-800">Gratitude Journal</h2></div>
+                            <p class="text-sm text-gray-700 mt-1">Record your blessings and answered prayers</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-white to-yellow-50 rounded-xl p-4 shadow-md border border-yellow-200">
+                            <textarea id="journalInput" placeholder="What are you grateful for today?" class="w-full px-3 py-2 rounded-lg border-2 border-yellow-300 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none bg-white" rows="4"></textarea>
+                            <button onclick="addJournalEntry()" class="mt-3 w-full bg-gradient-to-br from-amber-500 to-orange-500 text-white rounded-lg py-2 font-medium shadow-md">Add Entry</button>
+                        </div>
+                        ${journalEntries.length === 0 ? `
+                            <div class="text-center py-12 bg-white rounded-xl shadow-md border border-pink-200">
+                                <span class="text-5xl mb-3 block">❤️</span>
+                                <p class="text-gray-600 font-medium">No entries yet</p>
+                                <p class="text-sm text-gray-500 mt-1">Start recording your blessings</p>
+                            </div>
+                        ` : journalEntries.map(e => `
+                            <div class="bg-gradient-to-br from-white to-yellow-50 rounded-xl p-4 shadow-md border border-yellow-200">
+                                <p class="text-xs font-medium text-orange-700 mb-2">${e.date}</p>
+                                <p class="text-gray-700 leading-relaxed">${e.content}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } else if (tab === 'plans') {
+                if (!currentPlan) {
+                    html = `
+                        <div class="space-y-4">
+                            <div class="bg-gradient-to-r from-emerald-200 via-teal-200 to-cyan-200 rounded-2xl p-4 shadow-md">
+                                <div class="flex items-center gap-2"><span class="text-2xl">📖</span><h2 class="text-xl font-semibold text-gray-800">Reading Plans</h2></div>
+                                <p class="text-sm text-gray-700 mt-1">Build consistent Bible reading habits</p>
+                            </div>
+                            ${readingPlans.map(p => {
+                                const prog = getPlanProgress(p.id, p.days.length);
+                                return `
+                                    <div class="bg-gradient-to-br from-white to-emerald-50 rounded-xl p-5 shadow-md border border-emerald-200">
+                                        <div class="flex items-start gap-3 mb-3">
+                                            <span class="text-3xl">${p.icon}</span>
+                                            <div><h3 class="font-semibold text-gray-800 mb-1">${p.name}</h3>
+                                            <p class="text-sm text-gray-600 mb-2">${p.description}</p>
+                                            <p class="text-xs text-emerald-700 font-medium">${p.duration}</p></div>
+                                        </div>
+                                        ${prog > 0 ? `
+                                            <div class="mb-3"><div class="flex justify-between text-xs text-gray-600 mb-1"><span>Progress</span><span>${prog}%</span></div>
+                                            <div class="w-full bg-gray-200 rounded-full h-2"><div class="bg-gradient-to-r from-emerald-500 to-teal-500 h-2 rounded-full" style="width:${prog}%"></div></div></div>
+                                        ` : ''}
+                                        <button onclick="selectPlan('${p.id}')" class="w-full bg-gradient-to-br from-emerald-500 to-teal-500 text-white rounded-lg py-2 font-medium shadow-md">
+                                            ${prog > 0 ? 'Continue' : 'Start'} Plan
+                                        </button>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                } else {
+                    const p = readingPlans.find(x => x.id === currentPlan);
+                    const prog = getPlanProgress(p.id, p.days.length);
+                    html = `
+                        <div class="space-y-4">
+                            <button onclick="currentPlan=null;showTab('plans')" class="text-sm text-emerald-700 font-medium">← Back to Plans</button>
+                            <div class="bg-gradient-to-br from-white to-emerald-50 rounded-xl p-5 shadow-md border border-emerald-200">
+                                <div class="flex items-start gap-3 mb-3">
+                                    <span class="text-3xl">${p.icon}</span>
+                                    <div><h3 class="font-semibold text-gray-800 mb-1">${p.name}</h3>
+                                    <p class="text-sm text-gray-600">${p.description}</p></div>
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-600 mb-1"><span>Progress</span><span>${prog}%</span></div>
+                                <div class="w-full bg-gray-200 rounded-full h-2"><div class="bg-gradient-to-r from-emerald-500 to-teal-500 h-2 rounded-full" style="width:${prog}%"></div></div>
+                            </div>
+                            ${p.days.map(d => {
+                                const done = planProgress[p.id + '-' + d.day];
+                                return `
+                                    <div class="rounded-xl p-4 shadow-sm border ${done ? 'bg-gradient-to-br from-emerald-100 to-teal-100 border-emerald-300' : 'bg-white border-gray-200'}">
+                                        <div class="flex items-center gap-3">
+                                            <button onclick="toggleDay('${p.id}',${d.day})" class="text-2xl">${done ? '✅' : '⭕'}</button>
+                                            <div><p class="text-xs font-medium text-emerald-700">Day ${d.day}</p>
+                                            <p class="text-sm text-gray-700 font-medium">${d.reading}</p></div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                            ${prog === 100 ? `
+                                <div class="bg-gradient-to-br from-yellow-100 to-amber-100 rounded-xl p-5 shadow-m
